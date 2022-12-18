@@ -25,7 +25,7 @@ PACKAGE f8_pack IS
   TYPE enum_len IS (S,L);
   TYPE enum_int IS (I0,IX,IY);
   TYPE enum_op IS (
-    OP_NOP,OP_MOV,
+    OP_NOP,OP_MOV,OP_MOI,
     OP_ADD,OP_ADDD,OP_AND,OP_OR ,OP_XOR,OP_CMP,
     OP_SR1,OP_SL1,OP_SR4, OP_SL4,
     OP_COM,OP_LNK,OP_EDI,
@@ -195,7 +195,7 @@ PACKAGE f8_pack IS
     (ROMC_03,L,0,I0,OP_CMP,RACC,DATA),                              -- 25 II : CMP (ACC,IMM)      : CI   ii : CMP immediate acc.
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_03,L,0,I0,OP_NOP,RACC,RACC),                              -- 26 II : (fetch operand)    : IN   aa : Input port aa
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --         ACC <= IOport[DB]
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --         ACC <= IOport[DB]
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_03,L,0,I0,OP_NOP,RACC,RACC),                              -- 27 II : (fetch operand)    : OUT  aa : Output port aa
     (ROMC_1A,L,0,I0,OP_MOV,DATA,RACC),                              --         IOport[DB] <= ACC
@@ -248,7 +248,7 @@ PACKAGE f8_pack IS
     (ROMC_00,L,1,I0,OP_DEC,RISAR,RISAR),   ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,    -- 3C : (ISAR)--                    : DS (ISAR)  : Decrement  (ISAR)
     (ROMC_00,L,1,I0,OP_DEC,RISARP,RISARP), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,    -- 3D : (ISAR++)--                  : DS (ISAR+) : Decrement  (ISAR++)
     (ROMC_00,L,1,I0,OP_DEC,RISARM,RISARM), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,    -- 3E : (ISAR--)--                  : DS (ISAR-) : Decrement  (ISAR--)
-    (ROMC_00,L,1,I0,OP_DEC,R15,R15),       ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,    -- 3F : R15-- <INVALID>             : DS   R15   : Decrement  R15
+    (ROMC_00,S,1,I0,OP_NOP,RACC,RACC),     ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,    -- 3F : <INVALID>                   : Invalid
 
     (ROMC_00,S,1,I0,OP_MOV,RACC,R0 ),       ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,   -- 40 : ACC <= R0                   : LR A,R0      : LOAD    R0
     (ROMC_00,S,1,I0,OP_MOV,RACC,R1 ),       ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,   -- 41 : ACC <= R1                   : LR A,R1      : LOAD    R1
@@ -265,7 +265,7 @@ PACKAGE f8_pack IS
     (ROMC_00,S,1,I0,OP_MOV,RACC,RISAR),     ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,   -- 4C : ACC <= (ISAR)               : LR A,(ISAR)  : LOAD    (ISAR)
     (ROMC_00,S,1,I0,OP_MOV,RACC,RISARP),    ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,   -- 4D : ACC <= (ISAR++)             : LR A,(ISAR+) : LOAD    (ISAR++)
     (ROMC_00,S,1,I0,OP_MOV,RACC,RISARM),    ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,   -- 4E : ACC <= (ISAR--)             : LR A,(ISAR-) : LOAD    (ISAR--)
-    (ROMC_00,S,1,I0,OP_MOV,RACC,R15),       ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,   -- 4F : ACC <= R15  <INVALID>       : LR A,R15     : LOAD    R15
+    (ROMC_00,S,1,I0,OP_NOP,RACC,RACC),      ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,   -- 4F : <INVALID>                   : Invalid
 
     (ROMC_00,S,1,I0,OP_MOV,R0 ,RACC),    ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,      -- 50 : R0  <= ACC                  : LR R0 ,A     : STORE   R0
     (ROMC_00,S,1,I0,OP_MOV,R1 ,RACC),    ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,      -- 51 : R1  <= ACC                  : LR R1 ,A     : STORE   R1
@@ -282,7 +282,7 @@ PACKAGE f8_pack IS
     (ROMC_00,S,1,I0,OP_MOV,RISAR,RACC),  ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,      -- 5C : (ISAR) <= ACC               : LR (ISAR),A  : STORE   (ISAR)
     (ROMC_00,S,1,I0,OP_MOV,RISARP,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,      -- 5D : (ISAR++) <= ACC             : LR (ISAR+),A : STORE   (ISAR++)
     (ROMC_00,S,1,I0,OP_MOV,RISARM,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,      -- 5E : (ISAR--) <= ACC             : LR (ISAR-),A : STORE   (ISAR--)
-    (ROMC_00,S,1,I0,OP_MOV,R15,RACC),    ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,      -- 5F : R15 <= ACC  <INVALID>       : LR R15,A     : STORE   R15
+    (ROMC_00,S,1,I0,OP_NOP,RACC,RACC),   ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,      -- 5F : <INVALID>                   : Invalid
 
     (ROMC_00,S,1,I0,OP_LIS,ISARU,R0), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,         -- 60 : ISARU <= 0                     : LISU 0    : Load ISAR upper
     (ROMC_00,S,1,I0,OP_LIS,ISARU,R1), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,         -- 61 : ISARU <= 1                     : LISU 1    : Load ISAR upper
@@ -361,13 +361,13 @@ PACKAGE f8_pack IS
     (ROMC_03,S,0,I0,OP_NOP,RACC,RACC),                              -- 8F aa : Test  ISARL, PC +2 or +imm  : BR7 aa  : Branch if ISARlo/=7
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,
 
-    (ROMC_1C,S,0,I0,OP_TST9,RACC,RACC),                             -- 90 aa :                             :  BF 0   : Branch if negative
+    (ROMC_1C,S,0,I0,OP_TST9,RACC,RACC),                             -- 90 aa :                             :  BF 0   : Branch
     (ROMC_03,S,0,I0,OP_NOP,RACC,RACC),                              --      Test, change PC0 + 2 or +imm
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
-    (ROMC_1C,S,0,I0,OP_TST9,RACC,RACC),                             -- 91 aa :                             :  BF 1   : Branch if no carry
+    (ROMC_1C,S,0,I0,OP_TST9,RACC,RACC),                             -- 91 aa :                             :  BF 1   : Branch if negative
     (ROMC_03,S,0,I0,OP_NOP,RACC,RACC),                              --      Test, change PC0 + 2 or +imm
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
-    (ROMC_1C,S,0,I0,OP_TST9,RACC,RACC),                             -- 92 aa :                             :  BF 2   : Branch if
+    (ROMC_1C,S,0,I0,OP_TST9,RACC,RACC),                             -- 92 aa :                             :  BF 2   : Branch if no carry
     (ROMC_03,S,0,I0,OP_NOP,RACC,RACC),                              --      Test, change PC0 + 2 or +imm
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,S,0,I0,OP_TST9,RACC,RACC),                             -- 93 aa :                             :  BF 3   : Branch if
@@ -410,52 +410,52 @@ PACKAGE f8_pack IS
     (ROMC_03,S,0,I0,OP_NOP,RACC,RACC),                              --      Test, change PC0 + 2 or +imm
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
 
-    (ROMC_1C,S,0,I0,OP_MOV,RACC,PORT0),                             -- A0 : ACC <= IOPORT[0]               : INS  0  : Input port 0
+    (ROMC_1C,S,0,I0,OP_MOI,RACC,PORT0),                             -- A0 : ACC <= IOPORT[0]               : INS  0  : Input port 0
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,
-    (ROMC_1C,S,0,I0,OP_MOV,RACC,PORT1),                             -- A1 : ACC <= IOPORT[1]               : INS  1  : Input port 1
+    (ROMC_1C,S,0,I0,OP_MOI,RACC,PORT1),                             -- A1 : ACC <= IOPORT[1]               : INS  1  : Input port 1
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,ZZ,
 
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R2),                                -- A2 : DATA <= IOPPORTNUM             : INS  2  : Input port 2
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R3),                                -- A3 : DATA <= IOPPORTNUM             : INS  3  : Input port 3
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R4),                                -- A4 : DATA <= IOPPORTNUM             : INS  4  : Input port 4
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R5),                                -- A5 : DATA <= IOPPORTNUM             : INS  5  : Input port 5
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R6),                                -- A6 : DATA <= IOPPORTNUM             : INS  6  : Input port 6
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R7),                                -- A7 : DATA <= IOPPORTNUM             : INS  7  : Input port 7
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R8),                                -- A8 : DATA <= IOPPORTNUM             : INS  8  : Input port 8
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R9),                                -- A9 : DATA <= IOPPORTNUM             : INS  9  : Input port 9
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R10),                               -- AA : DATA <= IOPPORTNUM             : INS  10 : Input port 10
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R11),                               -- AB : DATA <= IOPPORTNUM             : INS  11 : Input port 11
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R12),                               -- AC : DATA <= IOPPORTNUM             : INS  12 : Input port 12
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R13),                               -- AD : DATA <= IOPPORTNUM             : INS  13 : Input port 13
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R14),                               -- AE : DATA <= IOPPORTNUM             : INS  14 : Input port 14
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
     (ROMC_1C,L,0,I0,OP_LIS,DATA,R15),                               -- AF : DATA <= IOPPORTNUM             : INS  15 : Input port 15
-    (ROMC_1B,L,0,I0,OP_MOV,RACC,DATA),                              --      DB <= DATA ioport
+    (ROMC_1B,L,0,I0,OP_MOI,RACC,DATA),                              --      DB <= DATA ioport
     (ROMC_00,S,1,I0,OP_NOP,RACC,RACC), ZZ,ZZ,ZZ,ZZ,ZZ,
 
     (ROMC_1C,S,0,I0,OP_MOV,PORT0,RACC),                             -- B0 : IOPORT[0] <= ACC               : OUTS 0  : Output port 0
@@ -767,7 +767,7 @@ PACKAGE BODY f8_pack IS
         iozcs_o(0):=NOT dst9_v(7);
         iozcs_o(1):=dst9_v(8);
         iozcs_o(2):=to_std_logic(dst9_v(7 DOWNTO 0)=x"00");
-        iozcs_o(3):=(src1(7) XOR dst9_v(7)) AND (src2(7) XOR dst9_v(7));
+        iozcs_o(3):=(src1(7) XNOR src2(7)) AND (src1(7) XOR dst9_v(7));
         dstm:='1';
         dst_v:=dst9_v(7 DOWNTO 0);
 
@@ -776,7 +776,7 @@ PACKAGE BODY f8_pack IS
         iozcs_o(0):=NOT dst9_v(7);
         iozcs_o(1):=dst9_v(8);
         iozcs_o(2):=to_std_logic(dst9_v(7 DOWNTO 0)=x"00");
-        iozcs_o(3):=(src1(7) XOR dst9_v(7)) AND (src2(7) XOR dst9_v(7));
+        iozcs_o(3):=(src1(7) XNOR src2(7)) AND (src1(7) XOR dst9_v(7));
 
         tc_v :=(((('0' & src1) + ('0' & src2)) AND "111110000") > "011110000");
         tic_v:=(('0' & src1(3 DOWNTO 0)) + ('0' & src2(3 DOWNTO 0))> "01111");
@@ -796,7 +796,7 @@ PACKAGE BODY f8_pack IS
         iozcs_o(0):=NOT dst9_v(7);
         iozcs_o(1):=dst9_v(8);
         iozcs_o(2):=to_std_logic(dst9_v(7 DOWNTO 0)=x"00");
-        iozcs_o(3):=(NOT src1(7) XOR dst9_v(7)) AND (src2(7) XOR dst9_v(7));
+        iozcs_o(3):=(NOT src1(7) XNOR src2(7)) AND (NOT src1(7) XOR dst9_v(7));
         dstm:='0';
 
       WHEN OP_AND => -- AND
@@ -877,7 +877,7 @@ PACKAGE BODY f8_pack IS
         iozcs_o(0):=NOT dst9_v(7);
         iozcs_o(1):=dst9_v(8);
         iozcs_o(2):=to_std_logic(dst9_v(7 DOWNTO 0)=x"00");
-        iozcs_o(3):=(src1(7) XOR dst9_v(7)) AND dst9_v(7);
+        iozcs_o(3):=(src1(7) XNOR '0') AND (src1(7) XOR dst9_v(7));
         dstm:='1';
         dst_v:=dst9_v(7 DOWNTO 0);
 
@@ -886,7 +886,7 @@ PACKAGE BODY f8_pack IS
         iozcs_o(0):=NOT dst9_v(7);
         iozcs_o(1):=dst9_v(8);
         iozcs_o(2):=to_std_logic(dst9_v(7 DOWNTO 0)=x"00");
-        iozcs_o(3):=(src1(7) XOR dst9_v(7)) AND dst9_v(7);
+        iozcs_o(3):=(src1(7) XNOR '0') AND (src1(7) XOR dst9_v(7));
         dstm:='1';
         dst_v:=dst9_v(7 DOWNTO 0);
 
@@ -906,6 +906,14 @@ PACKAGE BODY f8_pack IS
 
       WHEN OP_NOP =>
         dstm:='0';
+
+      WHEN OP_MOI => 
+        dst_v:=src2;
+        iozcs_o(0):=NOT dst_v(7);
+        iozcs_o(1):='0';
+        iozcs_o(2):=to_std_logic(dst_v=x"00");
+        iozcs_o(3):='0';
+        dstm:='1';
 
       WHEN OP_MOV => 
         dst_v:=src2;

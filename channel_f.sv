@@ -155,6 +155,10 @@ wire [7:0]  ioctl_dout;
 wire        ioctl_wait;
 wire [31:0] joystick_0,joystick_1;
 wire [15:0] joystick_analog_0,joystick_analog_1;
+wire [31:0] joystick_s0,joystick_s1;
+
+assign joystick_s0 = status[1] ? joystick_1 : joystick_0;
+assign joystick_s1 = status[1] ? joystick_0 : joystick_1;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -195,10 +199,8 @@ chf_core chf_core
     .vga_hs(VGA_HS),
     .vga_vs(VGA_VS),
     .vga_de(VGA_DE),
-    .joystick_0(joystick_0),
-    .joystick_1(joystick_1),
-    .joystick_analog_0(joystick_analog_0),
-    .joystick_analog_1(joystick_analog_1),
+    .joystick_0(joystick_s0),
+    .joystick_1(joystick_s1),
     .status(status),
     .ioctl_download(ioctl_download),
     .ioctl_index(ioctl_index),

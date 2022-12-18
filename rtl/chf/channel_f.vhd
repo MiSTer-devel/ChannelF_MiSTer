@@ -79,8 +79,6 @@ ENTITY chf_core IS
     -- HPS IO
     joystick_0        : IN  unsigned(31 DOWNTO 0);
     joystick_1        : IN  unsigned(31 DOWNTO 0);
-    joystick_analog_0 : IN  unsigned(15 DOWNTO 0);
-    joystick_analog_1 : IN  unsigned(15 DOWNTO 0);
     status            : IN  unsigned(31 DOWNTO 0);
     ioctl_download    : IN  std_logic;
     ioctl_index       : IN  std_logic_vector(7 DOWNTO 0);
@@ -107,10 +105,18 @@ ARCHITECTURE struct OF chf_core IS
   SIGNAL phase : uint4;
   SIGNAL ce : std_logic :='0';
   
-  SIGNAL pi0,po0,pi1,po1,pi1i,pi4,po4,pi4i,pi5,po5 : uv8;
+  SIGNAL pi0_n,po0_n,pi1_n,po1_n,pi1_ni,pi4_n,po4_n,pi4_ni,pi5_n,po5_n : uv8;
+  SIGNAL pi24_n,po24_n,pi25_n,po25_n : uv8;
+  SIGNAL pi10_n,po10_n,pi11_n,po11_n : uv8;
+
+  SIGNAL ram,rbm : std_logic_vector(0 TO 1023);
+  SIGNAL ram_dr,ram_dw,ram_wr,rbm_dr,rbm_dw,rbm_wr : std_logic;
+  SIGNAL ram_a,rbm_a : unsigned(9 DOWNTO 0);
+
   SIGNAL rdena : std_logic;
   SIGNAL load_a : uv10;
   SIGNAL load_d : uv8;
+  SIGNAL load_size,load_size_acc : uv16;
   SIGNAL load_wr0,load_wr1,load_wr2,load_wr3 : std_logic;
   SIGNAL tick : std_logic;
   SIGNAL reset_na,areset_na :  std_logic;
@@ -177,7 +183,7 @@ BEGIN
     PORT MAP (
       dr    => dr,       dw    => dw_cpu,   dv    => dv_cpu,
       romc  => romc,     tick  => tick,     phase => phase,
-      po_a  => po0,      pi_a  => pi0,      po_b  => po1,      pi_b    => pi1,
+      po_a_n=> po0_n,    pi_a_n=> pi0_n,    po_b_n => po1_n,      pi_b_n  => pi1_n,
       clk   => clk,      ce    => ce,       reset_na => reset_na,
       acco  => acc,      visaro => visar,   iozcso => iozcs);
 
@@ -192,8 +198,8 @@ BEGIN
       dw      => dr,     dr      => dr0,     dv      => dv0,
       romc    => romc,   tick    => tick,    phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
-      po_a    => po4,    pi_a    => pi4,     po_b    => po5,   pi_b    => pi5,
-      load_a  => load_a, load_d  => load_d,  load_wr => '0',
+      po_a_n  => po4_n,  pi_a_n  => pi4_n,   po_b_n  => po5_n, pi_b_n  => pi5_n,
+      load_a  => load_a, load_d  => load_d,  load_wr => '0', load_size => load_size,
       clk     => clk,    ce      => ce,      reset_na => reset_na,
       pc0o    => pc0,    pc1o    => pc1,     dc0o     => dc0);
 
@@ -201,30 +207,30 @@ BEGIN
   i_psu1:ENTITY work.f8_psu
     GENERIC MAP (
       PAGE   => "000001", -- 0x0400
-      IOPAGE => "111111", -- Not used
+      IOPAGE => "001001", -- 24/25 : MAZE GAME RAM
       IVEC   => x"FFFF",  -- Not used
       ROM    => arr_uv8(INIT_SL31254))
     PORT MAP (
       dw      => dr,     dr      => dr1,     dv      => dv1,
       romc    => romc,   tick    => tick,    phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
-      po_a    => OPEN,   pi_a    => x"FF",   po_b    => OPEN,  pi_b    => x"FF",
-      load_a  => load_a, load_d  => load_d,  load_wr => '0',
+      po_a_n  => po24_n, pi_a_n  => pi24_n,  po_b_n  => po25_n, pi_b_n  => pi25_n,
+      load_a  => load_a, load_d  => load_d,  load_wr => '0', load_size => load_size,
       clk     => clk,    ce      => ce,      reset_na => reset_na);
 
   -- CARTRIDGE
   i_psu2:ENTITY work.f8_psu
     GENERIC MAP (
       PAGE   => "000010", -- 0x0800
-      IOPAGE => "111110", -- Not used
+      IOPAGE => "000100", -- 10/11 : HANGMAN GAME RAM
       IVEC   => x"FFFF",  -- Not used
       ROM    => INIT_ZERO)
     PORT MAP (
       dw      => dr,     dr      => dr2,     dv      => dv2,
       romc    => romc,   tick    => tick,    phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
-      po_a    => OPEN,   pi_a    => x"FF",   po_b    => OPEN,  pi_b    => x"FF",
-      load_a  => load_a, load_d  => load_d,  load_wr => load_wr0,
+      po_a_n  => po10_n, pi_a_n  => pi10_n,  po_b_n  => po11_n, pi_b_n  => pi11_n,
+      load_a  => load_a, load_d  => load_d,  load_wr => load_wr0, load_size => load_size,
       clk     => clk,    ce      => ce,      reset_na => reset_na);
 
   -- CARTRIDGE
@@ -238,8 +244,8 @@ BEGIN
       dw      => dr,     dr      => dr3,     dv      => dv3,
       romc    => romc,   tick    => tick,    phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
-      po_a    => OPEN,   pi_a    => x"FF",   po_b    => OPEN,  pi_b    => x"FF",
-      load_a  => load_a, load_d  => load_d,  load_wr => load_wr1,
+      po_a_n  => OPEN,   pi_a_n  => x"FF",   po_b_n  => OPEN,  pi_b_n  => x"FF",
+      load_a  => load_a, load_d  => load_d,  load_wr => load_wr1, load_size => load_size,
       clk     => clk,    ce      => ce,      reset_na => reset_na);
   
   -- CARTRIDGE
@@ -253,8 +259,8 @@ BEGIN
       dw      => dr,     dr      => dr4,     dv      => dv4,
       romc    => romc,   tick    => tick,    phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
-      po_a    => OPEN,   pi_a    => x"FF",   po_b    => OPEN,  pi_b    => x"FF",
-      load_a  => load_a, load_d  => load_d,  load_wr => load_wr2,
+      po_a_n  => OPEN,   pi_a_n  => x"FF",   po_b_n  => OPEN,  pi_b_n  => x"FF",
+      load_a  => load_a, load_d  => load_d,  load_wr => load_wr2, load_size => load_size,
       clk     => clk,    ce      => ce,      reset_na => reset_na);
   
   -- CARTRIDGE
@@ -268,8 +274,8 @@ BEGIN
       dw      => dr,     dr      => dr5,     dv      => dv5,
       romc    => romc,   tick    => tick,    phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
-      po_a    => OPEN,   pi_a    => x"FF",   po_b    => OPEN,  pi_b    => x"FF",
-      load_a  => load_a, load_d  => load_d,  load_wr => load_wr3,
+      po_a_n  => OPEN,   pi_a_n  => x"FF",   po_b_n  => OPEN,  pi_b_n  => x"FF",
+      load_a  => load_a, load_d  => load_d,  load_wr => load_wr3, load_size => load_size,
       clk     => clk,    ce      => ce,      reset_na => reset_na);
   
   dr <= dr0 WHEN dv0='1' ELSE
@@ -280,6 +286,61 @@ BEGIN
         dr5 WHEN dv5='1' ELSE
         dw_cpu;
   
+  ----------------------------------------------------------
+  --  MAZE,   HANGMAN : 1kb RAM
+  -- port 24     10   : 0 : RW
+  -- port 24     10   : 1 : A3
+  -- port 24     10   : 2 : A2
+  -- port 24     10   : 3 : DATA WRITE
+  -- port 24     10   : 4 :
+  -- port 24     10   : 5 :
+  -- port 24     10   : 6 :
+  -- port 24     10   : 7 : DATA READ
+  -- port 25     11   : 0 : A0
+  -- port 25     11   : 1 : A4
+  -- port 25     11   : 2 : A5
+  -- port 25     11   : 3 : A6
+  -- port 25     11   : 4 : A1
+  -- port 25     11   : 5 : A7
+  -- port 25     11   : 6 : A8
+  -- port 25     11   : 7 : A9
+
+  PROCESS(clk) IS
+  BEGIN
+    IF rising_edge(clk) THEN
+      ram_dr<=ram(to_integer(ram_a(9 DOWNTO 0)));
+      
+      IF ram_wr='1' THEN
+        ram(to_integer(ram_a))<=ram_dw;
+      END IF;
+    END IF;
+  END PROCESS;
+
+  ram_wr <= NOT po24_n(0);
+  ram_dw <= po24_n(3);
+  ram_a  <= po25_n & po24_n(1) & po24_n(2);
+  pi24_n(7) <= ram_dr;
+  pi24_n(6 DOWNTO 0) <= po24_n(6 DOWNTO 0);
+  pi25_n <= po25_n;
+
+  PROCESS(clk) IS
+  BEGIN
+    IF rising_edge(clk) THEN
+      rbm_dr<=rbm(to_integer(rbm_a(9 DOWNTO 0)));
+      
+      IF rbm_wr='1' THEN
+        rbm(to_integer(rbm_a))<=rbm_dw;
+      END IF;
+    END IF;
+  END PROCESS;
+
+  rbm_wr <= NOT po10_n(0);
+  rbm_dw <= po10_n(3);
+  rbm_a  <= po11_n & po10_n(1) & po10_n(2);
+  pi10_n(7) <= rbm_dr;
+  pi10_n(6 DOWNTO 0) <= po10_n(6 DOWNTO 0);
+  pi11_n <= po11_n;
+
   ----------------------------------------------------------
   -- CARTRIDGE LOAD
   
@@ -293,17 +354,21 @@ BEGIN
       load_wr3<=    ioctl_addr(10) AND     ioctl_addr(11) AND ioctl_wr;
       load_d  <=unsigned(ioctl_dout);
       ioctl_wait<='0';
+      IF ioctl_wr='1' THEN
+        load_size_acc <= unsigned(ioctl_addr(15 DOWNTO 0));
+      END IF;
     END IF;
   END PROCESS;
   
-  rdena<=NOT po0(6);
+  rdena<=po0_n(6);
+  load_size <= load_size_acc + x"0800";
   
   ----------------------------------------------------------
   -- VIDEO
-  vram_h <= to_integer(NOT po4(6 DOWNTO 0));
-  vram_v <= to_integer(NOT po5(5 DOWNTO 0));
-  vram_dw<= NOT po1(7 DOWNTO 6);
-  vram_wr<= po0(5);
+  vram_h <= to_integer(po4_n(6 DOWNTO 0));
+  vram_v <= to_integer(po5_n(5 DOWNTO 0));
+  vram_dw<= po1_n(7 DOWNTO 6);
+  vram_wr<= NOT po0_n(5);
   
   vram_a <= vram_h + vram_v * 128;
 
@@ -366,53 +431,53 @@ BEGIN
   
   ----------------------------------------------------------
   -- Joysticks / Buttons
-  pi0(7 DOWNTO 4)<=po0(7 DOWNTO 4);
-  pi0(0) <= NOT (joystick_0(4) OR joystick_1(4)); -- TIME
-  pi0(1) <= NOT (joystick_0(5) OR joystick_1(5)); -- MODE
-  pi0(2) <= NOT (joystick_0(6) OR joystick_1(6)); -- HOLD
-  pi0(3) <= NOT (joystick_0(7) OR joystick_1(7)); -- START
+  pi0_n(7 DOWNTO 4)<=po0_n(7 DOWNTO 4);
+  pi0_n(0) <= joystick_0(4) OR joystick_1(4); -- TIME
+  pi0_n(1) <= joystick_0(5) OR joystick_1(5); -- MODE
+  pi0_n(2) <= joystick_0(6) OR joystick_1(6); -- HOLD
+  pi0_n(3) <= joystick_0(7) OR joystick_1(7); -- START
   
-  pi1i(7) <= NOT joystick_0(8);    -- RIGHT G.DOWN
-  pi1i(6) <= NOT joystick_0(9);    -- RIGHT G.UP
-  pi1i(5) <= NOT joystick_0(10);   -- RIGHT CW
-  pi1i(4) <= NOT joystick_0(11);   -- RIGHT CCW
-  pi1i(3) <= NOT joystick_0(3);    -- RIGHT UP
-  pi1i(2) <= NOT joystick_0(2);    -- RIGHT DOWN
-  pi1i(1) <= NOT joystick_0(1);    -- RIGHT LEFT
-  pi1i(0) <= NOT joystick_0(0);    -- RIGHT RIGHT
+  pi1_ni(7) <= joystick_0(8);    -- RIGHT G.DOWN
+  pi1_ni(6) <= joystick_0(9);    -- RIGHT G.UP
+  pi1_ni(5) <= joystick_0(10);   -- RIGHT CW
+  pi1_ni(4) <= joystick_0(11);   -- RIGHT CCW
+  pi1_ni(3) <= joystick_0(3);    -- RIGHT UP
+  pi1_ni(2) <= joystick_0(2);    -- RIGHT DOWN
+  pi1_ni(1) <= joystick_0(1);    -- RIGHT LEFT
+  pi1_ni(0) <= joystick_0(0);    -- RIGHT RIGHT
   
-  pi4i(7) <= NOT joystick_1(8);    -- LEFT G.DOWN
-  pi4i(6) <= NOT joystick_1(9);    -- LEFT G.UP
-  pi4i(5) <= NOT joystick_1(10);   -- LEFT CW
-  pi4i(4) <= NOT joystick_1(11);   -- LEFT CCW
-  pi4i(3) <= NOT joystick_1(3);    -- LEFT UP
-  pi4i(2) <= NOT joystick_1(2);    -- LEFT DOWN
-  pi4i(1) <= NOT joystick_1(1);    -- LEFT LEFT
-  pi4i(0) <= NOT joystick_1(0);    -- LEFT RIGHT
+  pi4_ni(7) <= joystick_1(8);    -- LEFT G.DOWN
+  pi4_ni(6) <= joystick_1(9);    -- LEFT G.UP
+  pi4_ni(5) <= joystick_1(10);   -- LEFT CW
+  pi4_ni(4) <= joystick_1(11);   -- LEFT CCW
+  pi4_ni(3) <= joystick_1(3);    -- LEFT UP
+  pi4_ni(2) <= joystick_1(2);    -- LEFT DOWN
+  pi4_ni(1) <= joystick_1(1);    -- LEFT LEFT
+  pi4_ni(0) <= joystick_1(0);    -- LEFT RIGHT
 
-  pi1<=pi1i OR po1 WHEN rdena='1' ELSE po1;
-  pi4<=pi4i OR po4 WHEN rdena='1' ELSE po4;
+  pi1_n<=pi1_ni AND po1_n WHEN rdena='1' ELSE po1_n;
+  pi4_n<=pi4_ni AND po4_n WHEN rdena='1' ELSE po4_n;
   
-  pi5<=po5;
+  pi5_n<=po5_n;
   
   ----------------------------------------------------------
   -- Audio
   -- 00 : Silence
   -- 01 : 1kHz
   -- 10 : 500Hz
-  -- 11 : 120Hz
+  -- 11 : 125Hz & 31Hz
   
-  tone <=po5(7 DOWNTO 6);
+  tone <=NOT po5_n(7 DOWNTO 6);
   PROCESS (clk) IS
     VARIABLE s_v : std_logic;
   BEGIN
     IF rising_edge(clk) THEN
       vdiv<=vdiv + 1;
       CASE tone IS
-        WHEN "00"   => s_v:='0';
-        WHEN "01"   => s_v:=vdiv(10);
-        WHEN "10"   => s_v:=vdiv(9);
-        WHEN OTHERS => s_v:=vdiv(7);
+        WHEN "00"   => s_v:='0'; -- OFF
+        WHEN "01"   => s_v:=vdiv(11); -- 2V
+        WHEN "10"   => s_v:=vdiv(12); -- 4V
+        WHEN OTHERS => s_v:=vdiv(13) AND vdiv(15); -- 8V & 32V
       END CASE;
       audio_l<=(OTHERS =>s_v);
       audio_r<=(OTHERS =>s_v);

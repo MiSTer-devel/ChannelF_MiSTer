@@ -25,10 +25,10 @@ ENTITY f8_cpu IS
     tick   : OUT std_logic;  -- 1/4 or 1/6 cycle lenght
     phase  : OUT uint4;
 
-    po_a   : OUT uv8;
-    pi_a   : IN  uv8;
-    po_b   : OUT uv8;
-    pi_b   : IN  uv8;
+    po_a_n : OUT uv8;
+    pi_a_n : IN  uv8;
+    po_b_n : OUT uv8;
+    pi_b_n : IN  uv8;
     
     clk      : IN std_logic;
     ce       : IN std_logic;
@@ -60,7 +60,6 @@ ARCHITECTURE rtl OF f8_cpu IS
   
   SIGNAL op : enum_op;
   
-  SIGNAL poa_l,pob_l : uv8;
   SIGNAL alu : uv8;
   SIGNAL test,bcc,testp,bccp,dstm : std_logic;
 
@@ -69,14 +68,12 @@ ARCHITECTURE rtl OF f8_cpu IS
 BEGIN
 
   phase<=phase_l;
-  po_a<=poa_l;
-  po_b<=pob_l;
   
   ----------------------------------------------------------
   romc<=ROMC_01 WHEN (bcc='1' AND test='1') OR
-         (opcode=x"8F" AND isarl/=7 AND mop.romc=ROMC_03) ELSE
+         (opcode=x"8F" AND visarl/=7 AND mop.romc=ROMC_03) ELSE
         ROMC_03 WHEN (bcc='1' AND test='0') OR
-         (opcode=x"8F" AND isarl=7 AND mop.romc=ROMC_03) ELSE
+         (opcode=x"8F" AND visarl=7 AND mop.romc=ROMC_03) ELSE
          mop.romc;
   
   sreg_ra<=mop.rs WHEN mop.rs<16 ELSE
@@ -149,8 +146,8 @@ BEGIN
                 rs1_v:=acc;
             END CASE;
             CASE mop.rs IS
-              WHEN PORT0 => rs2_v:=pi_a;
-              WHEN PORT1 => rs2_v:=pi_b;
+              WHEN PORT0 => rs2_v:=NOT pi_a_n;
+              WHEN PORT1 => rs2_v:=NOT pi_b_n;
               WHEN RACC =>  rs2_v:=acc;
               WHEN R0 | R1 | R2 | R3 | R4 | R5 | R6 | R7 |
                    R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15 =>
@@ -179,8 +176,8 @@ BEGIN
             IF dstm='1' THEN
               CASE mop.rd IS
                 WHEN RACC   => acc<=alu;
-                WHEN PORT0  => poa_l<=alu;
-                WHEN PORT1  => pob_l<=alu;
+                WHEN PORT0  => po_a_n<= NOT alu;
+                WHEN PORT1  => po_b_n<= NOT alu;
                 WHEN WREG   => iozcs<=alu(4 DOWNTO 0);
                 WHEN ISARU  => visar(5 DOWNTO 3)<=alu(2 DOWNTO 0);
                 WHEN ISARL  => visar(2 DOWNTO 0)<=alu(2 DOWNTO 0);

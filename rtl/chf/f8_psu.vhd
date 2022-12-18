@@ -49,15 +49,16 @@ ENTITY f8_psu IS
     pri_o    : OUT std_logic;
     pri_i    : IN  std_logic;
     
-    po_a     : OUT uv8; -- IO port A
-    pi_a     : IN  uv8;
+    po_a_n   : OUT uv8; -- IO port A
+    pi_a_n   : IN  uv8;
     
-    po_b     : OUT uv8; -- IO port B
-    pi_b     : IN  uv8;
+    po_b_n   : OUT uv8; -- IO port B
+    pi_b_n   : IN  uv8;
     
-    load_a   : IN uv10;
-    load_d   : IN uv8;
-    load_wr  : IN std_logic;
+    load_a    : IN uv10;
+    load_d    : IN uv8;
+    load_wr   : IN std_logic;
+    load_size : IN uv16;
     
     clk      : IN std_logic;
     ce       : IN std_logic;
@@ -75,12 +76,11 @@ ARCHITECTURE rtl OF f8_psu IS
   SIGNAL pc0,pc1 : uv16;
 
   SIGNAL mem : arr_uv8(0 TO 1023) :=ROM;
-  SIGNAL mem_a : uv16;
-  SIGNAL mem_dr,mem_dw : uv8;
+  SIGNAL mem_a,mem_a2 : uv16;
+  SIGNAL mem_dr,mem_dru : uv8;
 
   SIGNAL io_wr,io_rd : std_logic;
   SIGNAL io_port,io_dr,io_dw : uv8;
-  SIGNAL po_a_l,po_b_l : uv8;
   SIGNAL tim : uv8;
   SIGNAL tdiv : uint5;
   SIGNAL icr : uv2;
@@ -118,7 +118,7 @@ BEGIN
             -- the op code addressed by PC0. Then all devices increment
             -- the contents of PC0.
             IF phase=2 THEN
-              dr <= mem_dr;
+              dr <= mem_dru;
               dv <= pchk(pc0);
             END IF;
             IF phase=6 THEN
@@ -131,7 +131,7 @@ BEGIN
             -- the memory location addressed by PC0. Then all devices add the
             -- 8-bit value on the data bus, as a signed binary number, to PC0.
             IF phase=2 THEN
-              dr <= mem_dr;
+              dr <= mem_dru;
               dv <= pchk(pc0);
             END IF;
             IF phase=6 THEN
@@ -144,7 +144,7 @@ BEGIN
             -- contents of the memory location addressed by
             -- DC0. Then all devices increment DC0.
             IF phase=2 THEN
-              dr <= mem_dr;
+              dr <= mem_dru;
               dv <= pchk(dc0);
             END IF;
             IF phase=6 THEN
@@ -155,7 +155,7 @@ BEGIN
             -- L,S : Similar to 00, except that it is used for Immediate Operand
             -- fetches (using PC0) instead of instruction fetches.
             IF phase=2 THEN
-              dr <= mem_dr;
+              dr <= mem_dru;
               dv <= pchk(pc0);
             END IF;
             IF phase=6 THEN
@@ -177,9 +177,9 @@ BEGIN
             --IF phase=4 AND pchk(dc0)='1' THEN
             --  mem_wr<='1';
             --END IF;
-            --IF phase=6 THEN
-            --  dc0<=dc0 + 1;
-            --END IF;
+            IF phase=6 THEN
+              dc0<=dc0 + 1;
+            END IF;
             
           WHEN "00110" =>
             -- L   : Place the high order byte of DC0 on the data bus.
@@ -234,7 +234,7 @@ BEGIN
             -- value which has just been placed on the data bus into the low
             -- order byte of PC0.
             IF phase=2 THEN
-              dr <= mem_dr;
+              dr <= mem_dru;
               dv <= pchk(pc0);
             END IF;
             IF phase=6 THEN
@@ -252,7 +252,7 @@ BEGIN
             -- onto the data bus. The value on the data bus is then
             -- moved to the low order byte of DC0 by all devices
             IF phase=2 THEN
-              dr <= mem_dr;
+              dr <= mem_dru;
               dv <= pchk(pc0);
             END IF;
             IF phase=6 THEN
@@ -284,7 +284,7 @@ BEGIN
             -- on the data bus. All devices must then move the contents
             -- of the data bus to the upper byte of DC0.
             IF phase=2 THEN
-              dr <=mem_dr;
+              dr <=mem_dru;
               dv <=pchk(pc0);
             END IF;
             IF phase=6 THEN
@@ -440,12 +440,19 @@ BEGIN
       END IF;
     END IF;
   END PROCESS;
+
+
+  mem_a2 <= mem_a wHEN rising_edge(clk) AND ce='1';
+
+  mem_dru <= mem_dr WHEN (PAGE <load_size(15 DOWNTO 10) OR 
+     (PAGE =load_size(15 DOWNTO 10) AND mem_a2(9 DOWNTO 0)<=load_size(9 DOWNTO 0)))
+    ELSE
+    x"00";
+
   
   ----------------------------------------------------------
   -- IO PORTS
 
-  po_a<=po_a_l;
-  po_b<=po_b_l;
   int_req<=int_req_l;
   
   PROCESS(clk,reset_na) IS
@@ -476,9 +483,9 @@ BEGIN
         -------------------------------
         CASE io_port(1 DOWNTO 0) IS
           WHEN "00" => -- IO PORT A READ
-            io_dr<=pi_a AND po_a_l;
+            io_dr<=NOT pi_a_n;
           WHEN "01" => -- IO PORT B READ
-            io_dr<=pi_b AND po_b_l;
+            io_dr<=NOT pi_b_n;
           WHEN "10" => -- Interrupt control bits
             io_dr<=x"00"; -- <TBD>
           WHEN OTHERS => -- Timer
@@ -487,16 +494,16 @@ BEGIN
         
         IF io_wr='1' THEN
           CASE io_port(1 DOWNTO 0) IS
-            WHEN "00"   => po_a_l<=io_dw;
-            WHEN "01"   => po_b_l<=io_dw;
+            WHEN "00"   => po_a_n<=NOT io_dw;
+            WHEN "01"   => po_b_n<=NOT io_dw;
             WHEN "10"   => tim<=io_dw;
             WHEN OTHERS => icr<=io_dw(1 DOWNTO 0);
           END CASE;
         END IF;
 
         IF reset_na='0' THEN
-          po_a_l<=x"00";
-          po_b_l<=x"00";
+          po_a_n<=x"FF";
+          po_b_n<=x"FF";
         END IF;
         -------------------------------
       END IF;
