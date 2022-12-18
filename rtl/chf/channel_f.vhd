@@ -401,7 +401,7 @@ BEGIN
           END IF;
         END IF;
 
-        pos<=((vpos/4) MOD 64) * 128 + ((hpos/2) MOD 128);
+        pos<=((vpos/4) MOD 64) * 128 + ((hpos/2 + 4) MOD 128);
         vposp<=vpos;
         hposp<=hpos;
         
@@ -412,7 +412,7 @@ BEGIN
         vga_r<=std_logic_vector(PAL_R(CMAP(to_integer(p125 & p126 & pix))));
         vga_g<=std_logic_vector(PAL_G(CMAP(to_integer(p125 & p126 & pix))));
         vga_b<=std_logic_vector(PAL_B(CMAP(to_integer(p125 & p126 & pix))));
-        vga_de<=to_std_logic(vposp<=VDISP AND hposp<HDISP);
+        vga_de<=to_std_logic(vposp<=VDISP AND hposp<HDISP AND hposp>0);
         
         vga_hs<=to_std_logic(hposp>=HSYNCSTART AND hposp<=HSYNCEND);
         vga_vs<=to_std_logic(vposp>=VSYNCSTART AND vposp<=VSYNCEND);
