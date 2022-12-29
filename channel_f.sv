@@ -20,7 +20,7 @@ module emu
 (
      input         CLK_50M,
      input         RESET,
-     inout  [45:0] HPS_BUS,
+     inout  [48:0] HPS_BUS,
 
      //Video
      output        CLK_VIDEO,
@@ -38,6 +38,11 @@ module emu
      output        VGA_F1,
      output [1:0]  VGA_SL,
      output        VGA_SCALER,
+	  output        VGA_DISABLE,
+	  
+     input  [11:0] HDMI_WIDTH,
+	  input  [11:0] HDMI_HEIGHT,
+	  output        HDMI_FREEZE,
      
      output        LED_USER,  // 1 - ON, 0 - OFF.
      output  [1:0] LED_POWER,
@@ -113,6 +118,8 @@ assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DD
 assign VGA_SL = 0;
 assign VGA_F1 = 0;
 assign VGA_SCALER = 0;
+assign VGA_DISABLE = 0;
+assign HDMI_FREEZE = 0;
 
 assign AUDIO_S = 0;
 assign AUDIO_MIX = 0;
@@ -154,21 +161,20 @@ wire [24:0] ioctl_addr;
 wire [7:0]  ioctl_dout;
 wire        ioctl_wait;
 wire [31:0] joystick_0,joystick_1;
-wire [15:0] joystick_analog_0,joystick_analog_1;
+wire [15:0] joystick_analog_l,joystick_analog_r;
 wire [31:0] joystick_s0,joystick_s1;
 
 assign joystick_s0 = status[1] ? joystick_1 : joystick_0;
 assign joystick_s1 = status[1] ? joystick_0 : joystick_1;
 
-hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
+hps_io #(.CONF_STR(CONF_STR)) hps_io
 (
     .clk_sys(clk_sys),
     .HPS_BUS(HPS_BUS),
-    .conf_str(CONF_STR),
     .joystick_0(joystick_0),
     .joystick_1(joystick_1),
-    .joystick_analog_0(joystick_analog_0),
-    .joystick_analog_1(joystick_analog_1),
+    .joystick_l_analog_0(joystick_analog_l),
+    .joystick_r_analog_0(joystick_analog_r),
     .forced_scandoubler(forced_scandoubler),
     .buttons(buttons),
     .status(status),
