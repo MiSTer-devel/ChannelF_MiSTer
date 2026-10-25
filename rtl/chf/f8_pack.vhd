@@ -3,6 +3,8 @@
 --------------------------------------------------------------------------------
 -- DO 8/2020
 --------------------------------------------------------------------------------
+-- SPDX-License-Identifier: MIT
+--------------------------------------------------------------------------------
 -- With help from MAME F8 model
 
 LIBRARY ieee;
@@ -680,66 +682,19 @@ END PACKAGE;
 
 --##############################################################################
 PACKAGE BODY f8_pack IS
+
+-- Branch on False : Branch if the selected status bits are all reset.
   FUNCTION test_bf(op    : uv4;
                    iozcs : uv5) RETURN boolean IS
   BEGIN
-    CASE op IS
-      WHEN "0000" => -- Unconditional Branch
-        RETURN true;
-      WHEN "0001" => -- Branch on negative
-        RETURN (iozcs(0)='0');
-      WHEN "0010" => -- Branch if no carry
-        RETURN (iozcs(1)='0');
-      WHEN "0011" => -- Branch if no carry & negative
-        RETURN (iozcs(1)='0' AND iozcs(0)='0');
-      WHEN "0100" => -- Branch if not zero
-        RETURN (iozcs(2)='0');
-      WHEN "0101" => -- Same as T=1
-        RETURN (iozcs(0)='0');
-      WHEN "0110" => -- Branch if no carry & no zero
-        RETURN (iozcs(1)='0' AND iozcs(2)='0');
-      WHEN "0111" => -- Same as T=3
-        RETURN (iozcs(1)='0' AND iozcs(0)='0');
-      WHEN "1000" => -- Branch if no overflow
-        RETURN (iozcs(3)='0');
-      WHEN "1001" => -- Branch if negative & no overflow
-        RETURN (iozcs(3)='0' AND iozcs(0)='0');
-      WHEN "1010" => -- Branch if no overflow and no carry
-        RETURN (iozcs(3)='0' AND iozcs(1)='0');
-      WHEN "1011" => -- Branch if no overflow, no carry and negative
-        RETURN (iozcs(3)='0' AND iozcs(1)='0' AND iozcs(0)='0');
-      WHEN "1100" => -- Branch if no overflow and no zero
-        RETURN (iozcs(3)='0' AND iozcs(2)='0');
-      WHEN "1101" => -- Same as T=9
-        RETURN (iozcs(3)='0' AND iozcs(0)='0');
-      WHEN "1110" => -- Branch if no overflow no carry and not zero
-        RETURN (iozcs(3)='0' AND iozcs(1)='0' AND iozcs(0)='0');
-      WHEN OTHERS => -- Same as T=B
-        RETURN (iozcs(3)='0' AND iozcs(1)='0' AND iozcs(0)='0');
-    END CASE;
+    RETURN (iozcs(3 DOWNTO 0) AND op) = x"0";
   END FUNCTION;
 
+  -- Branch on True : Branch if any selected status bit is set.
   FUNCTION test_bt(op    : uv3;
                    iozcs : uv5) RETURN boolean IS
   BEGIN
-    CASE op IS
-      WHEN "000" => -- No branch
-        RETURN false;
-      WHEN "001" => -- Branch if positive
-        RETURN (iozcs(0)='1');
-      WHEN "010" => -- Branch if carry
-        RETURN (iozcs(1)='1');
-      WHEN "011" => -- Branch if positive or carry
-        RETURN (iozcs(0)='1' OR iozcs(1)='1');
-      WHEN "100" => -- Branch if zero
-        RETURN (iozcs(2)='1');
-      WHEN "101" => -- Same as T=1
-        RETURN (iozcs(0)='1');
-      WHEN "110" => -- Branch if zero or carry
-        RETURN (iozcs(2)='1' OR iozcs(1)='1');
-      WHEN OTHERS => -- Same as T=3
-        RETURN (iozcs(0)='1' OR iozcs(1)='1');
-    END CASE;
+    RETURN (iozcs(2 DOWNTO 0) AND op) /= "000";
   END FUNCTION;
 
 

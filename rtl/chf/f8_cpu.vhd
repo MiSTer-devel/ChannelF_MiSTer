@@ -3,6 +3,8 @@
 --------------------------------------------------------------------------------
 -- DO 8/2020
 --------------------------------------------------------------------------------
+-- SPDX-License-Identifier: MIT
+--------------------------------------------------------------------------------
 -- With help from MAME F8 model
 
 LIBRARY ieee;
@@ -22,7 +24,6 @@ ENTITY f8_cpu IS
     dv     : OUT std_logic;
     
     romc   : OUT uv5;
-    tick   : OUT std_logic;  -- 1/4 or 1/6 cycle lenght
     phase  : OUT uint4;
 
     po_a_n : OUT uv8;
@@ -105,9 +106,9 @@ BEGIN
         
         -----------------------------------------
         len_v:=mop.len;
-        IF (bcc='1' AND test='1') OR (opcode=x"8F" AND visarl=7) THEN
+        IF (bcc='1' AND test='1') OR (opcode=x"8F" AND visarl/=7) THEN
           len_v:=L;
-        ELSIF (bcc='1' AND test='0') OR (opcode=x"8F" AND visarl/=7) THEN
+        ELSIF (bcc='1' AND test='0') OR (opcode=x"8F" AND visarl=7) THEN
           len_v:=S;
         ELSE
           len_v:=mop.len;
@@ -239,6 +240,8 @@ BEGIN
           madrs<=to_integer(OP_RESET)*8;
           phase_l<=0;
           iozcs<="00000";
+          po_a_n<=x"FF";
+          po_b_n<=x"FF";
         END IF;
         
       END IF;

@@ -3,6 +3,8 @@
 --------------------------------------------------------------------------------
 -- DO 8/2020
 --------------------------------------------------------------------------------
+-- SPDX-License-Identifier: MIT
+--------------------------------------------------------------------------------
 -- With help from MAME F8 model
 
 -- 0000  : ROM : sl90025.rom or sl31253.rom
@@ -118,7 +120,6 @@ ARCHITECTURE struct OF chf_core IS
   SIGNAL load_d : uv8;
   SIGNAL load_size,load_size_acc : uv16;
   SIGNAL load_wr0,load_wr1,load_wr2,load_wr3 : std_logic;
-  SIGNAL tick : std_logic;
   SIGNAL reset_na,areset_na :  std_logic;
   SIGNAL vreset_na : unsigned(0 TO 15);
   
@@ -182,7 +183,7 @@ BEGIN
   i_cpu: ENTITY work.f8_cpu
     PORT MAP (
       dr    => dr,       dw    => dw_cpu,   dv    => dv_cpu,
-      romc  => romc,     tick  => tick,     phase => phase,
+      romc  => romc,     phase => phase,
       po_a_n=> po0_n,    pi_a_n=> pi0_n,    po_b_n => po1_n,      pi_b_n  => pi1_n,
       clk   => clk,      ce    => ce,       reset_na => reset_na,
       acco  => acc,      visaro => visar,   iozcso => iozcs);
@@ -196,7 +197,7 @@ BEGIN
       ROM    => arr_uv8(INIT_SL31253))
     PORT MAP (
       dw      => dr,     dr      => dr0,     dv      => dv0,
-      romc    => romc,   tick    => tick,    phase   => phase,
+      romc    => romc,   phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
       po_a_n  => po4_n,  pi_a_n  => pi4_n,   po_b_n  => po5_n, pi_b_n  => pi5_n,
       load_a  => load_a, load_d  => load_d,  load_wr => '0', load_size => load_size,
@@ -212,7 +213,7 @@ BEGIN
       ROM    => arr_uv8(INIT_SL31254))
     PORT MAP (
       dw      => dr,     dr      => dr1,     dv      => dv1,
-      romc    => romc,   tick    => tick,    phase   => phase,
+      romc    => romc,   phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
       po_a_n  => po24_n, pi_a_n  => pi24_n,  po_b_n  => po25_n, pi_b_n  => pi25_n,
       load_a  => load_a, load_d  => load_d,  load_wr => '0', load_size => load_size,
@@ -227,7 +228,7 @@ BEGIN
       ROM    => INIT_ZERO)
     PORT MAP (
       dw      => dr,     dr      => dr2,     dv      => dv2,
-      romc    => romc,   tick    => tick,    phase   => phase,
+      romc    => romc,   phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
       po_a_n  => po10_n, pi_a_n  => pi10_n,  po_b_n  => po11_n, pi_b_n  => pi11_n,
       load_a  => load_a, load_d  => load_d,  load_wr => load_wr0, load_size => load_size,
@@ -242,7 +243,7 @@ BEGIN
       ROM    => INIT_ZERO)
     PORT MAP (
       dw      => dr,     dr      => dr3,     dv      => dv3,
-      romc    => romc,   tick    => tick,    phase   => phase,
+      romc    => romc,   phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
       po_a_n  => OPEN,   pi_a_n  => x"FF",   po_b_n  => OPEN,  pi_b_n  => x"FF",
       load_a  => load_a, load_d  => load_d,  load_wr => load_wr1, load_size => load_size,
@@ -257,7 +258,7 @@ BEGIN
       ROM    => INIT_ZERO)
     PORT MAP (
       dw      => dr,     dr      => dr4,     dv      => dv4,
-      romc    => romc,   tick    => tick,    phase   => phase,
+      romc    => romc,   phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
       po_a_n  => OPEN,   pi_a_n  => x"FF",   po_b_n  => OPEN,  pi_b_n  => x"FF",
       load_a  => load_a, load_d  => load_d,  load_wr => load_wr2, load_size => load_size,
@@ -272,7 +273,7 @@ BEGIN
       ROM    => INIT_ZERO)
     PORT MAP (
       dw      => dr,     dr      => dr5,     dv      => dv5,
-      romc    => romc,   tick    => tick,    phase   => phase,
+      romc    => romc,   phase   => phase,
       ext_int => '0',    int_req => OPEN,    pri_o   => OPEN,  pri_i   => '1',
       po_a_n  => OPEN,   pi_a_n  => x"FF",   po_b_n  => OPEN,  pi_b_n  => x"FF",
       load_a  => load_a, load_d  => load_d,  load_wr => load_wr3, load_size => load_size,
